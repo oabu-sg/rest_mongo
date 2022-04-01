@@ -1,5 +1,7 @@
 from flask import Flask
 from pymongo import MongoClient
+from bson import json_util
+import json 
 
 with open("database.config") as config_file:
     database_url = config_file.read().strip()
@@ -23,9 +25,14 @@ def add_user(username):
     print(record)
     return f"The username that will be added is {username}"
 
+def parse_json(data):
+    return json.loads(json_util.dumps(data))
+    
 @flask_app.route('/isActive/<username>')
 def check_if_active(username):
-    record = db.clients_data.find({'username': username})
+    records = db.clients_data.find({'username': username})
+    print(db.clients_data.count_documents({'username': username}))
+    return parse_json(records[0])
 
 if __name__ == "__main__":
     flask_app.run(debug= True, port = 8080, host="0.0.0.0")

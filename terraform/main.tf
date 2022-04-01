@@ -260,6 +260,43 @@ resource "aws_instance" "devops106_terraform_osama_webserver_tf" {
   tags = {
     Name = "devops106_terraform_osama_webserver"
   }
+  
+  connection {
+    type = "ssh"
+    user = "ubuntu"
+    host = self.public_ip
+    private_key = file("/home/vagrant/.ssh/devops106_osama.pem")
+  }
+  
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt-get remove -y docker docker-engine docker.io containerd runc",
+      "sudo apt-get update",
+      "sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release",
+      "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg",
+      "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
+      "sudo apt-get update",
+      "sudo apt-get install -y docker-ce docker-ce-cli containerd.io",
+      "sudo usermod -a -G docker ubuntu",
+    ]
+  }
+  
+  provisioner "local-exec" {
+      command = "echo mongodb://${aws_instance.devops106_terraform_osama_db_tf.public_ip}:27017 > ../database.config"
+  }
+  
+  provisioner "file" {
+    source = "../database.config"
+    destination = "/home/ubuntu/database.config"
+  }
+  
+  provisioner "remote-exec" {
+    inline = [
+      "docker run -d hello-world",
+      "ls -la /home/ubuntu",
+      "cat /home/ubuntu/database.config"
+    ]
+  }
 }
 
 resource "aws_instance" "devops106_terraform_osama_db_tf" {
@@ -272,5 +309,29 @@ resource "aws_instance" "devops106_terraform_osama_db_tf" {
   associate_public_ip_address = true
   tags = {
     Name = "devops106_terraform_osama_db"
+  }
+  
+  connection {
+    type = "ssh"
+    user = "ubuntu"
+    host = self.public_ip
+    private_key = file("/home/vagrant/.ssh/devops106_osama.pem")
+  }
+  
+  provisioner "remote-exec" {
+    inline = [
+      "curl -fsSL https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -",
+      "echo \"deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse\" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list",
+      "sudo apt update",
+      "sudo apt install -y mongodb-org",
+      "sudo systemctl start mongod.service",
+      "sudo systemctl status mongod",
+      "sudo systemctl enable mongod",
+      #"mongo --eval 'db.runCommand({ connectionStatus: 1 })'",
+      ## sudo sed -i "s/bindIp: 127.0.0.1/bindIp:0.0.0.0/" /etc/mongod.conf
+      "sudo sed -i \"s/bindIp: 127.0.0.1/bindIp:0.0.0.0/\" /etc/mongod.conf",
+      "sudo systemctl restart mongod.service",
+    ]
+    
   }
 }
