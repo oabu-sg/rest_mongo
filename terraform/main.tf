@@ -4,6 +4,8 @@ provider "aws" {
 
 resource "aws_vpc" "devops106_terraform_osama_vpc_tf" {
   cidr_block = "10.213.0.0/16"
+  enable_dns_support = true
+  enable_dns_hostnames = true
   
   tags = {
     Name = "devops106_terraform_osama_vpc"
@@ -11,7 +13,7 @@ resource "aws_vpc" "devops106_terraform_osama_vpc_tf" {
 }
 
 resource "aws_subnet" "devops106_terraform_osama_subnet_webserver_tf" {
-  vpc_id = aws_vpc.devops106_terraform_osama_vpc_tf.id
+  vpc_id = local.vpc_id_var
   cidr_block = "10.213.1.0/24"
   
   tags = {
@@ -20,7 +22,7 @@ resource "aws_subnet" "devops106_terraform_osama_subnet_webserver_tf" {
 }
 
 resource "aws_subnet" "devops106_terraform_osama_subnet_db_tf" {
-  vpc_id = aws_vpc.devops106_terraform_osama_vpc_tf.id
+  vpc_id = local.vpc_id_var
   cidr_block = "10.213.2.0/24"
   
   tags = {
@@ -29,7 +31,7 @@ resource "aws_subnet" "devops106_terraform_osama_subnet_db_tf" {
 }
 
 resource "aws_internet_gateway" "devops106_terraform_osama_igw_tf" {
-  vpc_id = aws_vpc.devops106_terraform_osama_vpc_tf.id
+  vpc_id = local.vpc_id_var
   
   tags = {
     Name = "devops106_terraform_osama_igw"
@@ -37,7 +39,7 @@ resource "aws_internet_gateway" "devops106_terraform_osama_igw_tf" {
 }
 
 resource "aws_route_table" "devops106_terraform_osama_rt_public_tf" {
-  vpc_id = aws_vpc.devops106_terraform_osama_vpc_tf.id
+  vpc_id = local.vpc_id_var
 
   route {
     cidr_block = "0.0.0.0/0"
@@ -60,7 +62,7 @@ resource "aws_route_table_association" "devops106_terraform_osama_rt_assoc_publi
 }
 
 resource "aws_network_acl" "devops106_terraform_osama_nacl_public_tf" {
-  vpc_id = aws_vpc.devops106_terraform_osama_vpc_tf.id
+  vpc_id = local.vpc_id_var
 
   ingress {
     rule_no = 100
@@ -125,7 +127,7 @@ resource "aws_network_acl" "devops106_terraform_osama_nacl_public_tf" {
 }
 
 resource "aws_network_acl" "devops106_terraform_osama_nacl_db_tf" {
-  vpc_id = aws_vpc.devops106_terraform_osama_vpc_tf.id
+  vpc_id = local.vpc_id_var
 
   ingress {
     rule_no = 100
@@ -191,7 +193,7 @@ resource "aws_network_acl" "devops106_terraform_osama_nacl_db_tf" {
 
 resource "aws_security_group" "devops106_terraform_osama_sg_webserver_tf" {
     name = "devops106_terraform_osama_sg_webserver"
-    vpc_id = aws_vpc.devops106_terraform_osama_vpc_tf.id
+    vpc_id = local.vpc_id_var
 
     ingress {
         from_port = 22
@@ -221,7 +223,7 @@ resource "aws_security_group" "devops106_terraform_osama_sg_webserver_tf" {
 
 resource "aws_security_group" "devops106_terraform_osama_sg_db_tf" {
     name = "devops106_terraform_osama_sg_db"
-    vpc_id = aws_vpc.devops106_terraform_osama_vpc_tf.id
+    vpc_id = local.vpc_id_var
 
     ingress {
         from_port = 22
@@ -249,37 +251,45 @@ resource "aws_security_group" "devops106_terraform_osama_sg_db_tf" {
     }
 }
 
+data "template_file" "app_init" {
+  template = file("../init-scripts/docker-install.sh")
+}
+
 resource "aws_instance" "devops106_terraform_osama_webserver_tf" {
-  ami = "ami-08ca3fed11864d6bb"
+  ami = var.ubuntu_20_04_ami_id_var
   instance_type = "t2.micro"
   key_name = "devops106_osama"
   vpc_security_group_ids = [aws_security_group.devops106_terraform_osama_sg_webserver_tf.id]
   
   subnet_id = aws_subnet.devops106_terraform_osama_subnet_webserver_tf.id
   associate_public_ip_address = true
+  
+  count = 2
+  user_data = data.template_file.app_init.rendered
+  
   tags = {
-    Name = "devops106_terraform_osama_webserver"
+    Name = "devops106_terraform_osama_webserver_${count.index}"
   }
   
   connection {
     type = "ssh"
     user = "ubuntu"
     host = self.public_ip
-    private_key = file("/home/vagrant/.ssh/devops106_osama.pem")
+    private_key = file(var.private_key_file_path_var)
+  }
+  /*
+  provisioner "file" {
+    source = "../init-scripts/docker-install.sh"
+    destination = "/home/ubuntu/docker-install.sh"
   }
   
   provisioner "remote-exec" {
     inline = [
-      "sudo apt-get remove -y docker docker-engine docker.io containerd runc",
-      "sudo apt-get update",
-      "sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release",
-      "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg",
-      "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
-      "sudo apt-get update",
-      "sudo apt-get install -y docker-ce docker-ce-cli containerd.io",
-      "sudo usermod -a -G docker ubuntu",
+      "bash /home/ubuntu/docker-install.sh"
     ]
   }
+  */
+  
   
   provisioner "local-exec" {
       command = "echo mongodb://${aws_instance.devops106_terraform_osama_db_tf.public_ip}:27017 > ../database.config"
@@ -300,9 +310,9 @@ resource "aws_instance" "devops106_terraform_osama_webserver_tf" {
 }
 
 resource "aws_instance" "devops106_terraform_osama_db_tf" {
-  ami = "ami-08ca3fed11864d6bb"
+  ami = var.ubuntu_20_04_ami_id_var
   instance_type = "t2.micro"
-  key_name = "devops106_osama"
+  key_name = var.public_key_name_var
   vpc_security_group_ids = [aws_security_group.devops106_terraform_osama_sg_db_tf.id]
   
   subnet_id = aws_subnet.devops106_terraform_osama_subnet_db_tf.id
@@ -315,7 +325,7 @@ resource "aws_instance" "devops106_terraform_osama_db_tf" {
     type = "ssh"
     user = "ubuntu"
     host = self.public_ip
-    private_key = file("/home/vagrant/.ssh/devops106_osama.pem")
+    private_key = file(var.private_key_file_path_var)
   }
   
   provisioner "remote-exec" {
@@ -325,9 +335,9 @@ resource "aws_instance" "devops106_terraform_osama_db_tf" {
       "sudo apt update",
       "sudo apt install -y mongodb-org",
       "sudo systemctl start mongod.service",
-      "sudo systemctl status mongod",
+      #"sudo systemctl status mongod",
       "sudo systemctl enable mongod",
-      #"mongo --eval 'db.runCommand({ connectionStatus: 1 })'",
+      "mongo --eval 'db.runCommand({ connectionStatus: 1 })'",
       ## sudo sed -i "s/bindIp: 127.0.0.1/bindIp:0.0.0.0/" /etc/mongod.conf
       "sudo sed -i \"s/bindIp: 127.0.0.1/bindIp:0.0.0.0/\" /etc/mongod.conf",
       "sudo systemctl restart mongod.service",
