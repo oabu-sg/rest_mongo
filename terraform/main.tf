@@ -255,6 +255,10 @@ data "template_file" "app_init" {
   template = file("../init-scripts/docker-install.sh")
 }
 
+data "template_file" "db_init" {
+  template = file("../init-scripts/mongodb-install.sh")
+}
+
 resource "aws_instance" "devops106_terraform_osama_webserver_tf" {
   ami = var.ubuntu_20_04_ami_id_var
   instance_type = "t2.micro"
@@ -264,8 +268,8 @@ resource "aws_instance" "devops106_terraform_osama_webserver_tf" {
   subnet_id = aws_subnet.devops106_terraform_osama_subnet_webserver_tf.id
   associate_public_ip_address = true
   
-  count = 2
-  user_data = data.template_file.app_init.rendered
+  count = 3
+  #user_data = data.template_file.app_init.rendered
   
   tags = {
     Name = "devops106_terraform_osama_webserver_${count.index}"
@@ -290,7 +294,7 @@ resource "aws_instance" "devops106_terraform_osama_webserver_tf" {
   }
   */
   
-  
+  /*
   provisioner "local-exec" {
       command = "echo mongodb://${aws_instance.devops106_terraform_osama_db_tf.public_ip}:27017 > ../database.config"
   }
@@ -307,6 +311,7 @@ resource "aws_instance" "devops106_terraform_osama_webserver_tf" {
       "cat /home/ubuntu/database.config"
     ]
   }
+  */
 }
 
 resource "aws_instance" "devops106_terraform_osama_db_tf" {
@@ -328,6 +333,9 @@ resource "aws_instance" "devops106_terraform_osama_db_tf" {
     private_key = file(var.private_key_file_path_var)
   }
   
+  user_data = data.template_file.db_init.rendered
+  
+  /*
   provisioner "remote-exec" {
     inline = [
       "curl -fsSL https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -",
@@ -344,4 +352,21 @@ resource "aws_instance" "devops106_terraform_osama_db_tf" {
     ]
     
   }
+  */
+}
+
+resource "aws_route53_zone" "devops106_terraform_osama_dns_zone_tf" {
+    name = "osama.devops106"
+    
+    vpc {
+      vpc_id = local.vpc_id_var
+    }
+}
+
+resource "aws_route53_record" "devops106_terraform_osama_dns_db_tf" {
+  zone_id = aws_route53_zone.devops106_terraform_osama_dns_zone_tf.zone_id
+  name = "db"
+  type = "A"
+  ttl = "30"
+  records = [aws_instance.devops106_terraform_osama_db_tf.public_ip]
 }
