@@ -43,4 +43,5 @@ def check_if_active(username):
     return parse_json(records[0])
 
 if __name__ == "__main__":
-    flask_app.run(debug= True, port = 8080, host="0.0.0.0")
+    #flask_app.run(debug= True, port = 8080, host="0.0.0.0")
+    pass
