@@ -3,7 +3,7 @@ from pymongo import MongoClient
 from bson import json_util
 import json 
 
-with open("database.config") as config_file:
+with open("/database.config") as config_file:
     database_url = config_file.read().strip()
     
 print(f"DB URL: {database_url}")
