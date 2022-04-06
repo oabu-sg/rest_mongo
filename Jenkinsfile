@@ -34,6 +34,12 @@ pipeline {
           '''
         }
       }
+      
+      post {
+        always {
+          junit testResults: '**/test-results/*.xml'
+        }
+      }
     }
     
     stage('Push to Docker Hub'){
