@@ -12,7 +12,17 @@ pipeline {
     stage('Build Docker Image') {
       steps {
         script {
-          docker.build 'oabuoun/rest_mongo'
+          DOCKER_IMAGE = docker.build 'oabuoun/rest_mongo'
+        }
+      }
+    }
+    
+    stage('Push to Docker Hub'){
+      steps {
+        script {
+          docker.withRegistry('', 'docker_hub_cred'){
+            DOCKER_IMAGE.push()
+          }
         }
       }
     }
