@@ -10,7 +10,7 @@ pipeline {
       steps {
         checkout([
             $class: 'GitSCM', branches: [[name: '*/main']],
-            serRemoteConfigs: [[
+            userRemoteConfigs: [[
               url: 'git@github.com:oabu-sg/rest_mongo.git',
               credentialsId: 'ssh_git_cred'
             ]]
