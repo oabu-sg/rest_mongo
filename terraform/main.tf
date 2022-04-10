@@ -468,10 +468,28 @@ resource "aws_alb_target_group" "devops106_terraform_osama_tg_tf"{
   vpc_id = local.vpc_id_var
 }
 
+/*
+resource "aws_alb_target_group_attachment" "devops106_terraform_osama_tg_attach_0_server_tf" {
+  target_group_arn = aws_alb_target_group.devops106_terraform_osama_tg_tf.arn
+  target_id = aws_instance.devops106_terraform_osama_webserver_tf[0].id
+}
+
+resource "aws_alb_target_group_attachment" "devops106_terraform_osama_tg_attach_1_server_tf" {
+  target_group_arn = aws_alb_target_group.devops106_terraform_osama_tg_tf.arn
+  target_id = aws_instance.devops106_terraform_osama_webserver_tf[1].id
+}
+*/
+
 resource "aws_alb_target_group_attachment" "devops106_terraform_osama_tg_attach_tf" {
   target_group_arn = aws_alb_target_group.devops106_terraform_osama_tg_tf.arn
   count = length(aws_instance.devops106_terraform_osama_webserver_tf)
   target_id = aws_instance.devops106_terraform_osama_webserver_tf[count.index].id
+}
+
+resource "aws_alb_target_group_attachment" "devops106_terraform_osama_tg_2_attach_tf" {
+  target_group_arn = aws_alb_target_group.devops106_terraform_osama_tg_tf.arn
+  count = length(aws_instance.devops106_terraform_osama_webserver_2_tf)
+  target_id = aws_instance.devops106_terraform_osama_webserver_2_tf[count.index].id
 }
 
 resource "aws_alb_listener" "devops106_terraform_osama_lb_listener_tf" {
