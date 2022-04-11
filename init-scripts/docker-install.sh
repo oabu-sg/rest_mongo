@@ -9,6 +9,7 @@ sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 sudo usermod -a -G docker $USER
 sudo docker run hello-world
+sudo docker run -d -p 8080:5000 oabuoun/web-calculator
 
 
 

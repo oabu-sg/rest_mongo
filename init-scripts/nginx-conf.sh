@@ -8,7 +8,6 @@ sudo tee -a /etc/nginx/sites-available/spartan > /dev/null <<EOT
 upstream spartan_servers {
     server ${ip0}:8080;
     server ${ip1}:8080;
-    server ${ip2}:8080;
 }
 server {
     listen 80;

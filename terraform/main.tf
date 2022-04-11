@@ -325,12 +325,12 @@ data "template_file" "nginx_init" {
     vars = {
       ip0 = aws_instance.devops106_terraform_osama_webserver_tf[0].private_ip
       ip1 = aws_instance.devops106_terraform_osama_webserver_tf[1].private_ip
-      ip2 = aws_instance.devops106_terraform_osama_webserver_tf[2].private_ip
+      #ip2 = aws_instance.devops106_terraform_osama_webserver_tf[2].private_ip
     }
 }
 
 resource "aws_instance" "devops106_terraform_osama_webserver_tf" {
-  ami = var.ubuntu_20_04_ami_id_var
+  ami = var.webcalc_ami_var
   instance_type = "t2.micro"
   key_name = "devops106_osama"
   vpc_security_group_ids = [aws_security_group.devops106_terraform_osama_sg_webserver_tf.id]
@@ -463,7 +463,7 @@ resource "aws_route53_record" "devops106_terraform_osama_dns_webservers_tf" {
   type = "A"
   ttl = "30"
   name = "app"
-  records = aws_instance.devops106_terraform_osama_webserver_tf.[*].private_ip
+  records = aws_instance.devops106_terraform_osama_webserver_tf.*.private_ip
 }
 
 resource "aws_lb" "devops106_terraform_osama_lb_tf" {
