@@ -319,6 +319,16 @@ data "template_file" "db_init" {
   template = file("../init-scripts/mongodb-install.sh")
 }
 
+data "template_file" "nginx_init" {
+    template = file("../init-scripts/nginx-conf.sh")
+    
+    vars = {
+      ip0 = aws_instance.devops106_terraform_osama_webserver_tf[0].private_ip
+      ip1 = aws_instance.devops106_terraform_osama_webserver_tf[1].private_ip
+      ip2 = aws_instance.devops106_terraform_osama_webserver_tf[2].private_ip
+    }
+}
+
 resource "aws_instance" "devops106_terraform_osama_webserver_tf" {
   ami = var.ubuntu_20_04_ami_id_var
   instance_type = "t2.micro"
@@ -446,6 +456,14 @@ resource "aws_route53_record" "devops106_terraform_osama_dns_db_tf" {
   type = "A"
   ttl = "30"
   records = [aws_instance.devops106_terraform_osama_db_tf.public_ip]
+}
+
+resource "aws_route53_record" "devops106_terraform_osama_dns_webservers_tf" {
+  zone_id = aws_route53_zone.devops106_terraform_osama_dns_zone_tf.zone_id
+  type = "A"
+  ttl = "30"
+  name = "app"
+  records = aws_instance.devops106_terraform_osama_webserver_tf.[*].private_ip
 }
 
 resource "aws_lb" "devops106_terraform_osama_lb_tf" {
