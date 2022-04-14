@@ -2,12 +2,9 @@ from flask import Flask
 from pymongo import MongoClient
 from bson import json_util
 import json 
+import random
 
-with open("/database.config") as config_file:
-    database_url = config_file.read().strip()
-    
-print(f"DB URL: {database_url}")
-
+server_id = random.randint(1000, 9999)
 while True:
     try:
         client = MongoClient("mongodb://db.osama.devops106:27017")
@@ -24,7 +21,7 @@ flask_app = Flask(__name__)
 
 @flask_app.route('/')
 def home_page():
-    return "This is the Home Page of Flask + MongoDB"
+    return f"This is the Home Page of Flask + MongoDB from Server: {server_id}"
     
 @flask_app.route('/add/<username>')
 def add_user(username):
@@ -43,5 +40,4 @@ def check_if_active(username):
     return parse_json(records[0])
 
 if __name__ == "__main__":
-    #flask_app.run(debug= True, port = 8080, host="0.0.0.0")
-    pass
+    flask_app.run(debug= True, port = 8080, host="0.0.0.0")

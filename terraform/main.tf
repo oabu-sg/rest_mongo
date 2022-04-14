@@ -101,6 +101,15 @@ resource "aws_network_acl" "devops106_terraform_osama_nacl_public_tf" {
   }
 
   ingress {
+    rule_no = 250
+    from_port = 443
+    to_port = 443
+    cidr_block = "0.0.0.0/0"
+    protocol = "tcp"
+    action = "allow"
+  }
+
+  ingress {
     rule_no = 300
     from_port = 8080
     to_port = 8080
@@ -232,6 +241,13 @@ resource "aws_security_group" "devops106_terraform_osama_sg_webserver_tf" {
     ingress {
         from_port = 80
         to_port = 80
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    ingress {
+        from_port = 443
+        to_port = 443
         protocol = "tcp"
         cidr_blocks = ["0.0.0.0/0"]
     }
@@ -384,6 +400,22 @@ resource "aws_instance" "devops106_terraform_osama_webserver_tf" {
   */
 }
 
+resource "aws_instance" "devops106_terraform_osama_nginx_tf" {
+  ami = var.ubuntu_20_04_ami_id_var
+  instance_type = "t2.micro"
+  key_name = "devops106_osama"
+  vpc_security_group_ids = [aws_security_group.devops106_terraform_osama_sg_webserver_tf.id]
+  
+  subnet_id = aws_subnet.devops106_terraform_osama_subnet_webserver_tf.id
+  associate_public_ip_address = true
+  
+  user_data = data.template_file.nginx_init.rendered
+  
+  tags = {
+    Name = "devops106_terraform_osama_nginx"
+  }
+}
+
 resource "aws_instance" "devops106_terraform_osama_webserver_2_tf" {
   ami = var.ubuntu_20_04_ami_id_var
   instance_type = "t2.micro"
@@ -465,7 +497,7 @@ resource "aws_route53_record" "devops106_terraform_osama_dns_webservers_tf" {
   name = "app"
   records = aws_instance.devops106_terraform_osama_webserver_tf.*.private_ip
 }
-
+/*
 resource "aws_lb" "devops106_terraform_osama_lb_tf" {
   name = "devops106terraformosama-lb"
   internal = false
@@ -485,7 +517,7 @@ resource "aws_alb_target_group" "devops106_terraform_osama_tg_tf"{
   protocol = "HTTP"
   vpc_id = local.vpc_id_var
 }
-
+*/
 /*
 resource "aws_alb_target_group_attachment" "devops106_terraform_osama_tg_attach_0_server_tf" {
   target_group_arn = aws_alb_target_group.devops106_terraform_osama_tg_tf.arn
@@ -497,7 +529,7 @@ resource "aws_alb_target_group_attachment" "devops106_terraform_osama_tg_attach_
   target_id = aws_instance.devops106_terraform_osama_webserver_tf[1].id
 }
 */
-
+/*
 resource "aws_alb_target_group_attachment" "devops106_terraform_osama_tg_attach_tf" {
   target_group_arn = aws_alb_target_group.devops106_terraform_osama_tg_tf.arn
   count = length(aws_instance.devops106_terraform_osama_webserver_tf)
@@ -520,3 +552,4 @@ resource "aws_alb_listener" "devops106_terraform_osama_lb_listener_tf" {
       target_group_arn = aws_alb_target_group.devops106_terraform_osama_tg_tf.arn
     }
 }
+*/
