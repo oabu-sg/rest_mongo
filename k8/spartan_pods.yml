@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  labels:
+    app: spartan-app
+  name: spartan-deploy
+  
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spartan-app
+  template:
+    metadata:
+      labels:
+        app: spartan-app
+    spec:
+      containers:
+      - image: oabuoun/web-calculator
+        name: webcalc-container
+        ports:
+        - containerPort: 5000
+        volumeMount:
+        - mountPath: /log
+          name: log-dir
+      volumes:
+      - name: log-dir
+        hostPath: 
+          path: /home/ubuntu/log

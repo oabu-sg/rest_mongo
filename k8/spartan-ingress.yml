@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spartan-ingress
+  annotation:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+  
+spec:
+  rules:
+    - http:
+        paths:
+        - path: /calculator
+          pathType: Prefix
+          backend:
+            service:
+              name: spartan-service
+              port: 
+                number: 5000
+        - path: /spartan
+          pathType: Prefix
+          backend:
+            service:
+              name: surabhi-service
+              port: 
+                number: 8080
